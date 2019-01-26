@@ -32,7 +32,7 @@ ASMSRC = \
 	lib/famitone2/famitone2.s \
 
 GFX = \
-	gfx/CHR0.png \
+	gfx/tiles.png \
 
 PAL0 = "1D 06 19 01"
 PAL1 = "1D 1D 1D 1D"
@@ -133,7 +133,7 @@ itch: rom
 	cp jsnes/nes-embed.js $(ITCH_DIR)
 	zip -rj $(ITCH_DIR).zip $(ITCH_DIR)
 
-tiles: gfx/CHR0.chr tools/chr2png
+tiles: gfx/tiles.chr tools/chr2png
 	tools/chr2png $(PAL0) $< $(<:.chr=-pal0.png)
 	tools/chr2png $(PAL1) $< $(<:.chr=-pal1.png)
 	tools/chr2png $(PAL2) $< $(<:.chr=-pal2.png)

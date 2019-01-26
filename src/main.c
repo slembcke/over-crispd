@@ -271,11 +271,11 @@ void main(void){
 	
 	// Load BG tiles..
 	px_bg_table(0);
-	decompress_lz4_to_vram(CHR_ADDR(0, 0x00), gfx_chr0_lz4chr);
+	decompress_lz4_to_vram(CHR_ADDR(0, 0x00), gfx_tiles_lz4chr);
 	
 	// Load sprites.
 	px_spr_table(1);
-	decompress_lz4_to_vram(CHR_ADDR(1, 0x00), gfx_chr0_lz4chr);
+	decompress_lz4_to_vram(CHR_ADDR(1, 0x00), gfx_tiles_lz4chr);
 	
 	music_init(MUSIC);
 	sound_init(SOUNDS);
