@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../cc65"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.s": "mads",
+			"*.inc": "mads",
+			"nes.h": "c",
+			"pixler.h": "c",
+			"stdbool.h": "c",
+			"string.h": "c",
+			"lz4.h": "c",
+			"stdlib.h": "c",
+			"type_traits": "c",
+			"shared.h": "c",
+			"stb_image.h": "c"
+		}
+	}
+}
