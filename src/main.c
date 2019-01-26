@@ -68,13 +68,17 @@ static GameState main_menu(void){
 }
 
 #define GENE_00 0
-#define GENE_L 0x80
-#define GENE_R 0x08
+#define GENE_L 0x10
+#define GENE_R 0x20
+#define GENE_HELD 0x40
+
+#define GENE_SHIFT 2
+#define GENE_MASK 0x3
 
 #define GENE_A0 (0x00 | GENE_L)
-#define GENE_B0 (0x10 | GENE_L)
-#define GENE_C0 (0x20 | GENE_L)
-#define GENE_D0 (0x30 | GENE_L)
+#define GENE_B0 (0x04 | GENE_L)
+#define GENE_C0 (0x08 | GENE_L)
+#define GENE_D0 (0x0C | GENE_L)
 
 #define GENE_0A (0x00 | GENE_R)
 #define GENE_0B (0x01 | GENE_R)
@@ -104,13 +108,13 @@ static void genes_draw(void){
 		tmp = GENE_VALUE[idx];
 		
 		if(tmp & GENE_L){
-			iz = 'A' + 0x80 + ((tmp >> 4) & 0x3);
+			iz = 'A' + 0x80 + ((tmp >> GENE_SHIFT) & GENE_MASK);
 			px_spr(ix - 8, iy - 0x10, 0x00, iz);
 			px_spr(ix - 8, iy - 0x08, 0x00, iz);
 		}
 		
 		if(tmp & GENE_R){
-			iz = 'A' + 0x80 + ((tmp >> 0) & 0x3);
+			iz = 'A' + 0x80 + ((tmp >> 0) & GENE_MASK);
 			px_spr(ix + 0, iy - 0x10, 0x00, iz);
 			px_spr(ix + 0, iy - 0x08, 0x00, iz);
 		}
@@ -118,7 +122,7 @@ static void genes_draw(void){
 }
 
 #define PLAYER_SPEED 0x0180
-#define GRAB_OFFSET
+#define GRAB_OFFSET(_player_) ((s8)(_player_.flip ? 18 : -18))
 
 typedef struct {
 	u16 x, y;
@@ -158,14 +162,19 @@ static void player_update(register Player *_player, u8 joy){
 	if(JOY_BTN_B(player.joy ^ player.prev_joy) && JOY_BTN_B(player.joy)){
 		if(player.gene_held >= 0){
 			// Drop the gene.
+			GENE_VALUE[player.gene_held] &= ~GENE_HELD;
 			player.gene_held = -1;
 			sound_play(SOUND_DROP);
 		} else {
 			// Search for a gene to pick up.
 			for(idx = 0; idx < GENE_COUNT; ++idx){
-				// if(abs(GENE_X[idx] - (player.x >> 8) - (player.flip ? 18 : -18)) < 12 && abs(GENE_Y[idx] - (player.y >> 8)) < 12){
-				if(abs((s8)GENE_X[idx] - (s8)(player.x >> 8) - (player.flip ? 18 : -18)) < 12 && abs((s8)GENE_Y[idx] - (s8)(player.y >> 8)) < 12){
+				if(
+					(GENE_VALUE[idx] & GENE_HELD) == 0 &&
+					abs((s8)GENE_X[idx] - (s8)(player.x >> 8) - GRAB_OFFSET(player)) < 12 &&
+					abs((s8)GENE_Y[idx] - (s8)(player.y >> 8)) < 12
+				){
 					player.gene_held = idx;
+					GENE_VALUE[player.gene_held] |= GENE_HELD;
 					sound_play(SOUND_PICKUP);
 					break;
 				}
@@ -175,7 +184,7 @@ static void player_update(register Player *_player, u8 joy){
 	
 	if(player.gene_held >= 0){
 		// GENE_VALUE[player.gene_held] = 0;
-		GENE_X[player.gene_held] = (player.x >> 8) + (player.flip ? 18 : -18);
+		GENE_X[player.gene_held] = (player.x >> 8) + GRAB_OFFSET(player);
 		GENE_Y[player.gene_held] = (player.y >> 8);
 	}
 	
