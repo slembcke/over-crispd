@@ -150,6 +150,51 @@ static s8 gene_at(u8 x, u8 y){
 	return -1;
 }
 
+static void gene_splice(void){
+	s8 i0 = gene_at(0x68, 0x50);
+	s8 i1 = gene_at(0x78, 0x50);
+	s8 i2 = gene_at(0x88, 0x50);
+	
+	if(i0 >=0 && i1 < 0 && i2 >= 0 && (GENE_VALUE[i0] & GENE_WHOLE) == GENE_L && (GENE_VALUE[i2] & GENE_WHOLE) == GENE_R){
+		// Join the gene.
+		GENE_VALUE[i0] |= GENE_VALUE[i2] & GENE_RMASK;
+		GENE_X[i0] += 16;
+		gene_remove(i2);
+	}
+}
+
+static void gene_dice(void){
+	s8 i0 = gene_at(0x78, 0xB0);
+	s8 i1 = gene_at(0x88, 0xB0);
+	s8 i2 = gene_at(0x98, 0xB0);
+	
+	if(i0 < 0 && i1 >= 0 && i2 < 0 && (GENE_VALUE[i1] & GENE_WHOLE) == GENE_WHOLE){
+		// Split the gene.
+		GENE_X[GENE_COUNT] = GENE_X[i1] + 16;
+		GENE_Y[GENE_COUNT] = GENE_Y[i1];
+		GENE_VALUE[GENE_COUNT] = GENE_VALUE[i1] & ~GENE_LMASK;
+		++GENE_COUNT;
+		
+		GENE_X[i1] -= 16;
+		GENE_VALUE[i1] &= ~GENE_RMASK;
+	}
+}
+
+static void gene_rotate(void){
+	s8 i = gene_at(0xB8, 0x60);
+	
+	if(i >= 0){
+		static const u8 BIT_SWAP_TABLE[] = {
+			0x00, 0x05, 0x0A, 0x0F, 0x05, 0x00, 0x0F, 0x0A, 0x0A, 0x0F, 0x00, 0x05, 0x0F, 0x0A, 0x05, 0x00,
+			0x30, 0x35, 0x3A, 0x3F, 0x35, 0x30, 0x3F, 0x3A, 0x3A, 0x3F, 0x30, 0x35, 0x3F, 0x3A, 0x35, 0x30,
+			0x30, 0x35, 0x3A, 0x3F, 0x35, 0x30, 0x3F, 0x3A, 0x3A, 0x3F, 0x30, 0x35, 0x3F, 0x3A, 0x35, 0x30,
+			0x00, 0x05, 0x0A, 0x0F, 0x05, 0x00, 0x0F, 0x0A, 0x0A, 0x0F, 0x00, 0x05, 0x0F, 0x0A, 0x05, 0x00
+		};
+		
+		GENE_VALUE[i] ^= BIT_SWAP_TABLE[GENE_VALUE[i] & 0x3F];
+	}
+}
+
 #define PLAYER_SPEED 0x0180
 #define GRAB_OFFSET(_player_) (_player_.flip ? 14 : -14)
 
@@ -247,48 +292,13 @@ static void player_update(register Player *_player, u8 joy){
 	}
 	
 	if(JOY_BTN_A((player.joy ^ player.prev_joy) & player.joy)){
-		{
-			s8 i0 = gene_at(0x68, 0x50);
-			s8 i1 = gene_at(0x78, 0x50);
-			s8 i2 = gene_at(0x88, 0x50);
-			
-			if(i0 >=0 && i1 < 0 && i2 >= 0 && (GENE_VALUE[i0] & GENE_WHOLE) == GENE_L && (GENE_VALUE[i2] & GENE_WHOLE) == GENE_R){
-				// Join the gene.
-				GENE_VALUE[i0] |= GENE_VALUE[i2] & GENE_RMASK;
-				GENE_X[i0] += 16;
-				gene_remove(i2);
-			}
-		}
-		{
-			s8 i0 = gene_at(0x78, 0xB0);
-			s8 i1 = gene_at(0x88, 0xB0);
-			s8 i2 = gene_at(0x98, 0xB0);
-			
-			if(i0 < 0 && i1 >= 0 && i2 < 0 && (GENE_VALUE[i1] & GENE_WHOLE) == GENE_WHOLE){
-				// Split the gene.
-				GENE_X[GENE_COUNT] = GENE_X[i1] + 16;
-				GENE_Y[GENE_COUNT] = GENE_Y[i1];
-				GENE_VALUE[GENE_COUNT] = GENE_VALUE[i1] & ~GENE_LMASK;
-				++GENE_COUNT;
-				
-				GENE_X[i1] -= 16;
-				GENE_VALUE[i1] &= ~GENE_RMASK;
-			}
-		}
-		{
-			s8 i = gene_at(0xB8, 0x60);
-			
-			if(i >= 0){
-				static const u8 BIT_SWAP_TABLE[] = {
-					0x00, 0x05, 0x0A, 0x0F, 0x05, 0x00, 0x0F, 0x0A, 0x0A, 0x0F, 0x00, 0x05, 0x0F, 0x0A, 0x05, 0x00,
-					0x30, 0x35, 0x3A, 0x3F, 0x35, 0x30, 0x3F, 0x3A, 0x3A, 0x3F, 0x30, 0x35, 0x3F, 0x3A, 0x35, 0x30,
-					0x30, 0x35, 0x3A, 0x3F, 0x35, 0x30, 0x3F, 0x3A, 0x3A, 0x3F, 0x30, 0x35, 0x3F, 0x3A, 0x35, 0x30,
-					0x00, 0x05, 0x0A, 0x0F, 0x05, 0x00, 0x0F, 0x0A, 0x0A, 0x0F, 0x00, 0x05, 0x0F, 0x0A, 0x05, 0x00
-				};
-				
-				GENE_VALUE[i] ^= BIT_SWAP_TABLE[GENE_VALUE[i] & 0x3F];
-			}
-		}
+		ix = (player.x >> 8);
+		iy = (player.y >> 8);
+		idx = MAP[(iy & 0xF0) | (ix >> 4)];
+		
+		if(idx == SBUT) gene_splice();
+		if(idx == DBUT) gene_dice();
+		if(idx == RBUT) gene_rotate();
 	}
 	
 	if(JOY_SELECT(player.joy)){
