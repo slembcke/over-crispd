@@ -34,7 +34,7 @@ ASMSRC = \
 GFX = \
 	gfx/tiles.png \
 
-PAL0 = "1D 06 19 01"
+PAL0 = "36 26 16 06"
 PAL1 = "1D 1D 1D 1D"
 PAL2 = "1D 1D 1D 1D"
 PAL3 = "1D 1D 1D 1D"

@@ -10,7 +10,9 @@
 
 u8 joy0, joy1;
 
-#define CLR_BG 0x1D
+#define BLANK 0x60
+
+#define CLR_BG 0x36
 
 static const u8 PALETTE[] = {
 	CLR_BG, 0x06, 0x19, 0x01,
@@ -18,7 +20,7 @@ static const u8 PALETTE[] = {
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
 	
-	CLR_BG, 0x06, 0x19, 0x01,
+	CLR_BG, 0x26, 0x16, 0x06,
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
@@ -86,8 +88,8 @@ static GameState main_menu(void){
 #define GENE_0D (0x03 | GENE_R)
 
 #define GENE_COUNT 10
-static u8 GENE_X[GENE_COUNT] = {16, 16, 16, 16, 16, 16, 16, 16, 16, 16};
-static u8 GENE_Y[GENE_COUNT] = {0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0};
+static u8 GENE_X[GENE_COUNT] = {32, 32, 32, 32, 32, 32, 32, 32, 32, 32};
+static u8 GENE_Y[GENE_COUNT] = {0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0, 0xB0, 0xC0};
 static u8 GENE_VALUE[GENE_COUNT] = {
 	GENE_A0 | GENE_0B,
 	GENE_C0 | GENE_0D,
@@ -108,21 +110,21 @@ static void genes_draw(void){
 		tmp = GENE_VALUE[idx];
 		
 		if(tmp & GENE_L){
-			iz = 'A' + 0x80 + ((tmp >> GENE_SHIFT) & GENE_MASK);
+			iz = 0x20 + ((tmp >> GENE_SHIFT) & GENE_MASK);
 			px_spr(ix - 8, iy - 0x10, 0x00, iz);
-			px_spr(ix - 8, iy - 0x08, 0x00, iz);
+			px_spr(ix - 8, iy - 0x08, 0x80, iz);
 		}
 		
 		if(tmp & GENE_R){
-			iz = 'A' + 0x80 + ((tmp >> 0) & GENE_MASK);
-			px_spr(ix + 0, iy - 0x10, 0x00, iz);
-			px_spr(ix + 0, iy - 0x08, 0x00, iz);
+			iz = 0x20 + ((tmp >> 0) & GENE_MASK);
+			px_spr(ix + 0, iy - 0x10, 0x40, iz);
+			px_spr(ix + 0, iy - 0x08, 0xC0, iz);
 		}
 	}
 }
 
 #define PLAYER_SPEED 0x0180
-#define GRAB_OFFSET(_player_) ((s8)(_player_.flip ? 18 : -18))
+#define GRAB_OFFSET(_player_) ((s8)(_player_.flip ? 14 : -14))
 
 typedef struct {
 	u16 x, y;
@@ -196,17 +198,18 @@ static void player_draw(register Player *player){
 	ix = player->x >> 8;
 	iy = player->y >> 8;
 	idx = (ix/2 + (iy/4)) & 0x3;
+	idx *= 2;
 	
 	if(player->flip){
-		px_spr(ix - 8, iy - 0x10, 0x40, '<' + 0x80);
-		px_spr(ix + 0, iy - 0x10, 0x40, '<' + 0x80);
-		px_spr(ix - 9, iy - 0x08, 0x40, '0' + idx);
-		px_spr(ix + 1, iy - 0x08, 0x40, '0' + idx);
+		px_spr(ix - 8, iy - 0x10, 0x40, 0x01 + (px_ticks & 0x7));
+		px_spr(ix + 0, iy - 0x10, 0x40, 0x00);
+		px_spr(ix - 8, iy - 0x08, 0x40, 0x11 + idx);
+		px_spr(ix + 0, iy - 0x08, 0x40, 0x10 + idx);
 	} else {
-		px_spr(ix - 8, iy - 0x10, 0x00, '<' + 0x80);
-		px_spr(ix + 0, iy - 0x10, 0x00, '<' + 0x80);
-		px_spr(ix - 9, iy - 0x08, 0x00, '0' + idx);
-		px_spr(ix + 1, iy - 0x08, 0x00, '0' + idx);
+		px_spr(ix - 8, iy - 0x10, 0x00, 0x00);
+		px_spr(ix + 0, iy - 0x10, 0x00, 0x01 + (px_ticks & 0x7));
+		px_spr(ix - 8, iy - 0x08, 0x00, 0x10 + idx);
+		px_spr(ix + 0, iy - 0x08, 0x00, 0x11 + idx);
 	}
 }
 
