@@ -46,6 +46,7 @@ static void px_ppu_sync_on(void){
 }
 
 static void debug_hex(u16 value){
+	px_buffer_inc(PX_INC1);
 	px_buffer_data(4, NT_ADDR(0, 1, 1));
 	PX.buffer[0] = _hextab[(value >> 0xC) & 0xF];
 	PX.buffer[1] = _hextab[(value >> 0x8) & 0xF];
@@ -140,15 +141,20 @@ static u8 GENE_X[GENE_MAX] = {24, 24, 24, 24, 24, 24};
 static u8 GENE_Y[GENE_MAX] = {0x20, 0x30, 0x40, 0x50, 0x60, 0x70};
 static u8 GENE_VALUE[GENE_MAX] = {
 	GENE_A0 | GENE_0A,
-	GENE_B0 | GENE_0B,
-	GENE_C0 | GENE_0C,
+	GENE_D0 | GENE_0B,
 	GENE_D0 | GENE_0D,
+	GENE_B0 | GENE_0C,
+	GENE_C0 | GENE_0C,
 	GENE_A0 | GENE_0B,
+};
+
+static const u8 EXPECTED_GENES[6] = {
+	GENE_B0 | GENE_0A,
 	GENE_C0 | GENE_0D,
-	GENE_A0 | GENE_0B,
-	GENE_C0 | GENE_0D,
-	GENE_A0 | GENE_0B,
-	GENE_C0 | GENE_0D,
+	GENE_B0 | GENE_0B,
+	GENE_A0 | GENE_0D,
+	GENE_C0 | GENE_0A,
+	GENE_D0 | GENE_0C,
 };
 
 static void gene_remove(u8 i){
@@ -239,6 +245,41 @@ static void gene_rotate(void){
 		
 		GENE_VALUE[i] ^= BIT_SWAP_TABLE[GENE_VALUE[i] & 0x3F];
 	}
+}
+
+static void gene_check(){
+	s8 i;
+	bool match;
+	
+	i = gene_at(0xE8, 0x90);
+	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[0]);
+	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
+	px_wait_frames(30);
+	
+	i = gene_at(0xE8, 0xA0);
+	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[1]);
+	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
+	px_wait_frames(30);
+	
+	i = gene_at(0xE8, 0xB0);
+	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[2]);
+	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
+	px_wait_frames(30);
+	
+	i = gene_at(0xE8, 0xC0);
+	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[3]);
+	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
+	px_wait_frames(30);
+	
+	i = gene_at(0xE8, 0xD0);
+	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[4]);
+	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
+	px_wait_frames(30);
+	
+	i = gene_at(0xE8, 0xE0);
+	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[5]);
+	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
+	px_wait_frames(30);
 }
 
 #define PLAYER_SPEED 0x0180
@@ -375,10 +416,12 @@ static void player_update(register Player *_player, u8 joy){
 	iz = MAP_BLOCK_AT(ix, iy);
 	idx = MAP[iz];
 	if(idx & BUTTON_BIT){
-		if(idx == SBUT && player.button == 0xFF) gene_splice();
-		if(idx == DBUT && player.button == 0xFF) gene_dice();
-		if(idx == RBUT && player.button == 0xFF) gene_rotate();
-		player.button = idx;
+		u8 button = idx;
+		if(button == SBUT && player.button == 0xFF) gene_splice();
+		if(button == DBUT && player.button == 0xFF) gene_dice();
+		if(button == RBUT && player.button == 0xFF) gene_rotate();
+		if(button == GBUT && player.button == 0xFF) gene_check();
+		player.button = button;
 	} else {
 		player.button = 0xFF;
 	}
