@@ -427,6 +427,40 @@ static void player_draw(register Player *player){
 	}
 }
 
+static void blit_tiles(u16 addr, u8 base){
+	ix = base + 0x00 + (px_ticks & 0xE);
+	iy = ix + 0x10;
+	
+	px_buffer_inc(PX_INC32);
+	px_buffer_data(26, addr);
+	PX.buffer[0x00] = ix;
+	PX.buffer[0x01] = iy;
+	PX.buffer[0x02] = ix;
+	PX.buffer[0x03] = iy;
+	PX.buffer[0x04] = ix;
+	PX.buffer[0x05] = iy;
+	PX.buffer[0x06] = ix;
+	PX.buffer[0x07] = iy;
+	PX.buffer[0x08] = ix;
+	PX.buffer[0x09] = iy;
+	PX.buffer[0x0A] = ix;
+	PX.buffer[0x0B] = iy;
+	PX.buffer[0x0C] = ix;
+	PX.buffer[0x0D] = iy;
+	PX.buffer[0x0E] = ix;
+	PX.buffer[0x0F] = iy;
+	PX.buffer[0x10] = ix;
+	PX.buffer[0x11] = iy;
+	PX.buffer[0x12] = ix;
+	PX.buffer[0x13] = iy;
+	PX.buffer[0x14] = ix;
+	PX.buffer[0x15] = iy;
+	PX.buffer[0x16] = ix;
+	PX.buffer[0x17] = iy;
+	PX.buffer[0x18] = ix;
+	PX.buffer[0x19] = iy;
+}
+
 static GameState game_loop(void){
 	px_inc(PX_INC1);
 	px_ppu_sync_off(); {
@@ -457,6 +491,9 @@ static GameState game_loop(void){
 		}
 		
 		gene_draw();
+		
+		blit_tiles(NT_ADDR(0, 28, 2), 0xE0);
+		blit_tiles(NT_ADDR(0, 29, 2), 0xE1);
 		
 		px_spr_end();
 		// px_profile_end();
