@@ -233,15 +233,15 @@ static const Player PLAYER_INIT[] = {
 #define FULL (NON_WALKABLE_BIT | STORAGE_BIT | FULL_BIT)
 
 // Uff, running out of time. Gotta just cram this in.
-static const u8 MAP[] = {
+static u8 MAP[] = {
 //  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
 	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // 0
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, WALL, STOR, WALL, // 1
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 2
-	WALL, STOR, MPTY, RBUT, MPTY, WALL, WALL, WALL, WALL, WALL, MPTY, MPTY, WALL, WALL, STOR, WALL, // 3
-	WALL, STOR, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, SBUT, MPTY, WALL, WALL, STOR, WALL, // 4
-	WALL, STOR, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, WALL, WALL, WALL, WALL, STOR, WALL, // 5
-	WALL, STOR, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 6
+	WALL, FULL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, WALL, STOR, WALL, // 1
+	WALL, FULL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 2
+	WALL, FULL, MPTY, RBUT, MPTY, WALL, WALL, WALL, WALL, WALL, MPTY, MPTY, WALL, WALL, STOR, WALL, // 3
+	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, SBUT, MPTY, WALL, WALL, STOR, WALL, // 4
+	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, WALL, WALL, WALL, WALL, STOR, WALL, // 5
+	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 6
 	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 7
 	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 8
 	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 9
@@ -288,7 +288,7 @@ static void player_update(register Player *_player, u8 joy){
 	// Collide with the block above.
 	iz = MAP_BLOCK_AT(ix, iy);
 	idx = (MAP - 16)[iz] & NON_WALKABLE_BIT;
-	edge = (~iy & 0x0F) - 12;
+	edge = (~iy & 0x0F) - 10;
 	if(idx && edge >= 0){
 		player.y += (edge << 8);
 	}
@@ -312,26 +312,42 @@ static void player_update(register Player *_player, u8 joy){
 	if(JOY_BTN_B((player.joy ^ player.prev_joy) & player.joy)){
 		if(player.gene_held >= 0){
 			ix = (player.x >> 8) + GRAB_OFFSET(player);
-			iy = (player.y >> 8);
-			if(MAP[(iy & 0xF0) | (ix >> 4)] & STORAGE_BIT){
+			iy = (player.y >> 8) - 8;
+			iz = MAP_BLOCK_AT(ix, iy);
+			idx = MAP[iz];
+			if((idx & STORAGE_BIT) && !(idx & FULL_BIT)){
 				// Drop the gene.
 				GENE_X[player.gene_held] = (GENE_X[player.gene_held] & 0xF0) + 0x08;
 				GENE_Y[player.gene_held] = (GENE_Y[player.gene_held] + 0x08) & 0xF0;
 				GENE_VALUE[player.gene_held] &= ~GENE_HELD;
+				
+				// Mark the slot as full.
+				MAP[iz] |= FULL_BIT;
+				
 				player.gene_held = -1;
 				sound_play(SOUND_DROP);
 			}
 		} else {
 			// Search for a gene to pick up.
+			// Holy crap this is a trash fire, lol.
 			for(idx = 0; idx < GENE_COUNT; ++idx){
+				ix = (player.x >> 8) + GRAB_OFFSET(player);
+				iy = (player.y >> 8) - 8;
 				if(
-					(GENE_VALUE[idx] & GENE_HELD) == 0 &&
-					abs((s8)GENE_X[idx] - (s8)(player.x >> 8) - GRAB_OFFSET(player)) < 12 &&
-					abs((s8)GENE_Y[idx] - (s8)(player.y >> 8)) < 12
+					(((GENE_X[idx] - 8) ^ ix) & 0xF0) == 0 &&
+					(((GENE_Y[idx] - 8) ^ iy) & 0xF0) == 0 &&
+					(GENE_VALUE[idx] & GENE_HELD) == 0
 				){
 					player.gene_held = idx;
-					GENE_VALUE[player.gene_held] |= GENE_HELD;
 					sound_play(SOUND_PICKUP);
+					
+					// Mark the gene as held.
+					GENE_VALUE[player.gene_held] |= GENE_HELD;
+					
+					// Mark the map as open.
+					iz = MAP_BLOCK_AT(ix, iy);
+					MAP[iz] &= ~FULL_BIT;
+					
 					break;
 				}
 			}
