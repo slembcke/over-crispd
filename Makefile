@@ -35,9 +35,9 @@ GFX = \
 	gfx/tiles.png \
 
 PAL0 = "36 26 16 06"
-PAL1 = "1D 1D 1D 1D"
-PAL2 = "1D 1D 1D 1D"
-PAL3 = "1D 1D 1D 1D"
+PAL1 = "36 24 14 04"
+PAL2 = "36 28 17 36"
+PAL3 = "36 20 2D 1D"
 
 MAPS = \
 	gfx/menu.tmx \

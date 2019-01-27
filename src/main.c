@@ -97,11 +97,11 @@ static GameState main_menu(void){
 #define GENE_0C (0x02 | GENE_R)
 #define GENE_0D (0x03 | GENE_R)
 
-#define GENE_MAX 16
+#define GENE_MAX 12
 
-static u8 GENE_COUNT = 8;
-static u8 GENE_X[GENE_MAX] = {24, 24, 24, 24, 24, 24, 24, 24};
-static u8 GENE_Y[GENE_MAX] = {0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0};
+static u8 GENE_COUNT = 6;
+static u8 GENE_X[GENE_MAX] = {24, 24, 24, 24, 24, 24};
+static u8 GENE_Y[GENE_MAX] = {0x20, 0x30, 0x40, 0x50, 0x60, 0x70};
 static u8 GENE_VALUE[GENE_MAX] = {
 	GENE_A0 | GENE_0A,
 	GENE_B0 | GENE_0B,
@@ -151,14 +151,14 @@ static s8 gene_at(u8 x, u8 y){
 }
 
 static void gene_splice(void){
-	s8 i0 = gene_at(0x68, 0x50);
-	s8 i1 = gene_at(0x78, 0x50);
-	s8 i2 = gene_at(0x88, 0x50);
+	s8 i0 = gene_at(0x78, 0x50);
+	s8 i1 = gene_at(0x78, 0x60);
+	s8 i2 = gene_at(0x78, 0x70);
 	
-	if(i0 >=0 && i1 < 0 && i2 >= 0 && (GENE_VALUE[i0] & GENE_WHOLE) == GENE_L && (GENE_VALUE[i2] & GENE_WHOLE) == GENE_R){
+	if(i0 >=0 && i1 < 0 && i2 >= 0 && ((GENE_VALUE[i0] ^ GENE_VALUE[i2]) & GENE_WHOLE) == GENE_WHOLE){
 		// Join the gene.
-		GENE_VALUE[i0] |= GENE_VALUE[i2] & GENE_RMASK;
-		GENE_X[i0] += 16;
+		GENE_VALUE[i0] |= GENE_VALUE[i2] & (GENE_LMASK | GENE_RMASK);
+		GENE_Y[i0] += 16;
 		gene_remove(i2);
 	}
 }
