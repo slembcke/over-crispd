@@ -130,12 +130,14 @@ static void gene_draw(void){
 		
 		if(tmp & GENE_L){
 			iz = (tmp >> GENE_SHIFT) & GENE_MASK;
+			if((tmp & GENE_R) == 0) iz += 4;
 			px_spr(ix - 8, iy - 0x10, 0x00 | iz, 0x20 + iz);
 			px_spr(ix - 8, iy - 0x08, 0x80 | iz, 0x20 + iz);
 		}
 		
 		if(tmp & GENE_R){
 			iz = (tmp >> 0) & GENE_MASK;
+			if((tmp & GENE_L) == 0) iz += 4;
 			px_spr(ix + 0, iy - 0x10, 0x40 | iz, 0x20 + iz);
 			px_spr(ix + 0, iy - 0x08, 0xC0 | iz, 0x20 + iz);
 		}
