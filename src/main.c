@@ -445,7 +445,7 @@ static GameState game_loop(void){
 		if(JOY_START(joy0 | joy1)) pause();
 		
 		player_update(PLAYER + 0, joy0);
-		// player_update(PLAYER + 1, joy1);
+		player_update(PLAYER + 1, joy1);
 		
 		// z-sort and draw.
 		if((PLAYER[0].y >> 8) > (PLAYER[1].y >> 8)){
