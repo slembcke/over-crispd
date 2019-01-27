@@ -171,6 +171,38 @@ static const Player PLAYER_INIT[] = {
 	{150 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x01, -1},
 };
 
+#define BUTTON_BIT 0x04
+#define NON_WALKABLE_BIT 0x08
+#define STORAGE_BIT 0x10
+#define FULL_BIT 0x20
+
+#define MPTY 0x00
+#define SBUT (BUTTON_BIT | 0x00)
+#define DBUT (BUTTON_BIT | 0x01)
+#define RBUT (BUTTON_BIT | 0x02)
+#define WALL (NON_WALKABLE_BIT)
+#define STOR (NON_WALKABLE_BIT | STORAGE_BIT)
+#define FULL (NON_WALKABLE_BIT | STORAGE_BIT | FULL_BIT)
+
+// Uff, running out of time. Gotta just cram this in.
+static const u8 MAP[] = {
+	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, SBUT, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, STOR, STOR, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, RBUT, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, STOR, STOR, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, DBUT, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
+	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL,
+};
+
 static void player_update(register Player *_player, u8 joy){
 	static Player player;
 	memcpy(&player, _player, sizeof(player));
@@ -260,8 +292,9 @@ static void player_update(register Player *_player, u8 joy){
 	}
 	
 	if(JOY_SELECT(player.joy)){
-		// debug_hex((GENE_X[0] << 0) | (GENE_Y[0] & 0));
-		debug_hex(GENE_X[0] << 8);
+		ix = (player.x >> 8);
+		iy = (player.y >> 8);
+		debug_hex(MAP[(iy & 0xF0) | (ix >> 4)]);
 	}
 	
 	if(player.gene_held >= 0){
@@ -307,7 +340,7 @@ static GameState game_loop(void){
 	
 	wait_noinput();
 	while(true){
-		
+		// px_profile_start();
 		poll_input();
 		
 		if(JOY_START(joy0 | joy1)) pause();
@@ -327,6 +360,7 @@ static GameState game_loop(void){
 		gene_draw();
 		
 		px_spr_end();
+		// px_profile_end();
 		px_wait_nmi();
 	}
 	
