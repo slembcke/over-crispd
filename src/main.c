@@ -252,7 +252,11 @@ static const u8 MAP[] = {
 	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // E
 };
 
+#define MAP_BLOCK_AT(x, y) ((y & 0xF0)| (x >> 4))
+
 static void player_update(register Player *_player, u8 joy){
+	static s8 edge;
+	
 	static Player player;
 	memcpy(&player, _player, sizeof(player));
 	
@@ -269,6 +273,17 @@ static void player_update(register Player *_player, u8 joy){
 	
 	player.x += player.vx;
 	player.y += player.vy;
+	
+	ix = (player.x >> 8);
+	iy = (player.y >> 8) - 4;
+	
+	// Collide with block below the character.
+	iz = MAP_BLOCK_AT(ix, iy);
+	idx = (MAP + 16)[iz];
+	edge = 6 - (~iy & 0x0F);
+	if(idx && edge >= 0){
+		player.y -= (edge << 8);
+	}
 	
 	if(JOY_BTN_B((player.joy ^ player.prev_joy) & player.joy)){
 		if(player.gene_held >= 0){
