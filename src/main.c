@@ -199,9 +199,9 @@ static void gene_splice(void){
 		GENE_Y[i0] += 16;
 		gene_remove(i2);
 		
-		MAP[0x56] &= ~FULL_BIT;
-		MAP[0x66] |=  FULL_BIT;
-		MAP[0x76] &= ~FULL_BIT;
+		MAP[0x46] &= ~FULL_BIT;
+		MAP[0x56] |=  FULL_BIT;
+		MAP[0x66] &= ~FULL_BIT;
 	}
 }
 
