@@ -253,13 +253,15 @@ typedef struct {
 	
 	u8 palette;
 	s8 gene_held;
+	
+	u8 button;
 } Player;
 
 static Player PLAYER[2];
 
 static const Player PLAYER_INIT[] = {
-	{128 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x00, -1},
-	{150 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x01, -1},
+	{128 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x00, -1, 0},
+	{150 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x01, -1, 0},
 };
 
 static void player_update(register Player *_player, u8 joy){
@@ -362,40 +364,43 @@ static void player_update(register Player *_player, u8 joy){
 		}
 	}
 	
-	if(JOY_BTN_A((player.joy ^ player.prev_joy) & player.joy)){
-		ix = (player.x >> 8);
-		iy = (player.y >> 8);
-		idx = MAP[(iy & 0xF0) | (ix >> 4)];
-		
-		if(idx == SBUT) gene_splice();
-		if(idx == DBUT) gene_dice();
-		if(idx == RBUT) gene_rotate();
-	}
-	
 	if(player.gene_held >= 0){
 		// GENE_VALUE[player.gene_held] = 0;
 		GENE_X[player.gene_held] = (player.x >> 8) + GRAB_OFFSET(player);
 		GENE_Y[player.gene_held] = (player.y >> 8);
 	}
 	
-	if(JOY_SELECT(player.joy)){
-		// ix = (player.x >> 8);
-		// iy = (player.y >> 8);
-		
-		ix = (player.x >> 8) + GRAB_OFFSET(player);
-		iy = (player.y >> 8) - 8;
-		
-		iz = MAP_BLOCK_AT(ix, iy);
-		idx = MAP[iz];
-		debug_hex(iz);
-		
-		// px_buffer_data(4, NT_ADDR(0, 1, 1));
-		// PX.buffer[0] = (idx & BUTTON_BIT ? 'B' : '_');
-		// PX.buffer[1] = (idx & NON_WALKABLE_BIT ? 'W' : '_');
-		// PX.buffer[2] = (idx & STORAGE_BIT ? 'S' : '_');
-		// PX.buffer[3] = (idx & FULL_BIT ? 'F' : '_');
-		// PX.buffer[3] = _hextab[idx & 0x3];
+	ix = (player.x >> 8);
+	iy = (player.y >> 8);
+	iz = MAP_BLOCK_AT(ix, iy);
+	idx = MAP[iz];
+	if(idx & BUTTON_BIT){
+		if(idx == SBUT && player.button == 0xFF) gene_splice();
+		if(idx == DBUT && player.button == 0xFF) gene_dice();
+		if(idx == RBUT && player.button == 0xFF) gene_rotate();
+		player.button = idx;
+	} else {
+		player.button = 0xFF;
 	}
+	
+	// if(JOY_SELECT(player.joy)){
+	// 	// ix = (player.x >> 8);
+	// 	// iy = (player.y >> 8);
+		
+	// 	ix = (player.x >> 8) + GRAB_OFFSET(player);
+	// 	iy = (player.y >> 8) - 8;
+		
+	// 	iz = MAP_BLOCK_AT(ix, iy);
+	// 	idx = MAP[iz];
+	// 	debug_hex(iz);
+		
+	// 	// px_buffer_data(4, NT_ADDR(0, 1, 1));
+	// 	// PX.buffer[0] = (idx & BUTTON_BIT ? 'B' : '_');
+	// 	// PX.buffer[1] = (idx & NON_WALKABLE_BIT ? 'W' : '_');
+	// 	// PX.buffer[2] = (idx & STORAGE_BIT ? 'S' : '_');
+	// 	// PX.buffer[3] = (idx & FULL_BIT ? 'F' : '_');
+	// 	// PX.buffer[3] = _hextab[idx & 0x3];
+	// }
 	
 	player.prev_joy = joy;
 	memcpy(_player, &player, sizeof(player));
@@ -440,7 +445,7 @@ static GameState game_loop(void){
 		if(JOY_START(joy0 | joy1)) pause();
 		
 		player_update(PLAYER + 0, joy0);
-		player_update(PLAYER + 1, joy1);
+		// player_update(PLAYER + 1, joy1);
 		
 		// z-sort and draw.
 		if((PLAYER[0].y >> 8) > (PLAYER[1].y >> 8)){
