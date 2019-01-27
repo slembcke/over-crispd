@@ -109,15 +109,15 @@ static void genes_draw(void){
 		tmp = GENE_VALUE[idx];
 		
 		if(tmp & GENE_L){
-			iz = 0x20 + ((tmp >> GENE_SHIFT) & GENE_MASK);
-			px_spr(ix - 8, iy - 0x10, 0x00 | iz, iz);
-			px_spr(ix - 8, iy - 0x08, 0x80 | iz, iz);
+			iz = (tmp >> GENE_SHIFT) & GENE_MASK;
+			px_spr(ix - 8, iy - 0x10, 0x00 | iz, 0x20 + iz);
+			px_spr(ix - 8, iy - 0x08, 0x80 | iz, 0x20 + iz);
 		}
 		
 		if(tmp & GENE_R){
-			iz = 0x20 + ((tmp >> 0) & GENE_MASK);
-			px_spr(ix + 0, iy - 0x10, 0x40 | iz, iz);
-			px_spr(ix + 0, iy - 0x08, 0xC0 | iz, iz);
+			iz = (tmp >> 0) & GENE_MASK;
+			px_spr(ix + 0, iy - 0x10, 0x40 | iz, 0x20 + iz);
+			px_spr(ix + 0, iy - 0x08, 0xC0 | iz, 0x20 + iz);
 		}
 	}
 }
