@@ -166,9 +166,9 @@ static void gene_splice(void){
 }
 
 static void gene_dice(void){
-	s8 i0 = gene_at(0x88, 0x90);
-	s8 i1 = gene_at(0x88, 0xA0);
-	s8 i2 = gene_at(0x88, 0xB0);
+	s8 i0 = gene_at(0x78, 0xA0);
+	s8 i1 = gene_at(0x78, 0xB0);
+	s8 i2 = gene_at(0x78, 0xC0);
 	
 	if(i0 < 0 && i1 >= 0 && i2 < 0 && (GENE_VALUE[i1] & GENE_WHOLE) == GENE_WHOLE){
 		// Split the gene.
@@ -243,12 +243,12 @@ static const u8 MAP[] = {
 	WALL, STOR, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, WALL, WALL, WALL, WALL, STOR, WALL, // 5
 	WALL, STOR, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 6
 	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 7
-	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 8
-	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 9
-	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // A
-	WALL, WALL, MPTY, MPTY, MPTY, WALL, WALL, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // B
-	WALL, WALL, MPTY, MPTY, MPTY, WALL, DBUT, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // C
-	WALL, WALL, MPTY, MPTY, MPTY, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, GBUT, MPTY, MPTY, STOR, WALL, // D
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 8
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 9
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // A
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // B
+	WALL, WALL, MPTY, MPTY, MPTY, WALL, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // C
+	WALL, WALL, MPTY, MPTY, MPTY, WALL, DBUT, MPTY, MPTY, MPTY, MPTY, GBUT, MPTY, MPTY, STOR, WALL, // D
 	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // E
 };
 
@@ -272,12 +272,16 @@ static void player_update(register Player *_player, u8 joy){
 	
 	if(JOY_BTN_B((player.joy ^ player.prev_joy) & player.joy)){
 		if(player.gene_held >= 0){
-			// Drop the gene.
-			GENE_X[player.gene_held] = (GENE_X[player.gene_held] & 0xF0) + 0x08;
-			GENE_Y[player.gene_held] = (GENE_Y[player.gene_held] + 0x08) & 0xF0;
-			GENE_VALUE[player.gene_held] &= ~GENE_HELD;
-			player.gene_held = -1;
-			sound_play(SOUND_DROP);
+			ix = (player.x >> 8) + GRAB_OFFSET(player);
+			iy = (player.y >> 8);
+			if(MAP[(iy & 0xF0) | (ix >> 4)] & STORAGE_BIT){
+				// Drop the gene.
+				GENE_X[player.gene_held] = (GENE_X[player.gene_held] & 0xF0) + 0x08;
+				GENE_Y[player.gene_held] = (GENE_Y[player.gene_held] + 0x08) & 0xF0;
+				GENE_VALUE[player.gene_held] &= ~GENE_HELD;
+				player.gene_held = -1;
+				sound_play(SOUND_DROP);
+			}
 		} else {
 			// Search for a gene to pick up.
 			for(idx = 0; idx < GENE_COUNT; ++idx){
@@ -311,17 +315,17 @@ static void player_update(register Player *_player, u8 joy){
 		GENE_Y[player.gene_held] = (player.y >> 8);
 	}
 	
-	// if(JOY_SELECT(player.joy)){
-	// 	ix = (player.x >> 8);
-	// 	iy = (player.y >> 8);
-	// 	iz = MAP[(iy & 0xF0) | (ix >> 4)];
+	if(JOY_SELECT(player.joy)){
+		ix = (player.x >> 8);
+		iy = (player.y >> 8);
+		iz = MAP[(iy & 0xF0) | (ix >> 4)];
 		
-	// 	px_buffer_data(4, NT_ADDR(0, 1, 1));
-	// 	PX.buffer[0] = (iz & BUTTON_BIT ? 'B' : '_');
-	// 	PX.buffer[1] = (iz & NON_WALKABLE_BIT ? 'W' : '_');
-	// 	PX.buffer[2] = (iz & STORAGE_BIT ? 'S' : '_');
-	// 	PX.buffer[3] = _hextab[iz & 0x3];
-	// }
+		px_buffer_data(4, NT_ADDR(0, 1, 1));
+		PX.buffer[0] = (iz & BUTTON_BIT ? 'B' : '_');
+		PX.buffer[1] = (iz & NON_WALKABLE_BIT ? 'W' : '_');
+		PX.buffer[2] = (iz & STORAGE_BIT ? 'S' : '_');
+		PX.buffer[3] = _hextab[iz & 0x3];
+	}
 	
 	player.prev_joy = joy;
 	memcpy(_player, &player, sizeof(player));
