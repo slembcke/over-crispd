@@ -45,6 +45,14 @@ static void px_ppu_sync_on(void){
 	px_wait_nmi();
 }
 
+static void debug_hex(u16 value){
+	px_buffer_data(4, NT_ADDR(0, 1, 1));
+	PX.buffer[0] = _hextab[(value >> 0xC) & 0xF];
+	PX.buffer[1] = _hextab[(value >> 0x8) & 0xF];
+	PX.buffer[2] = _hextab[(value >> 0x4) & 0xF];
+	PX.buffer[3] = _hextab[(value >> 0x0) & 0xF];
+}
+
 static GameState main_menu(void);
 static GameState game_loop(void);
 static void pause(void);
@@ -71,10 +79,13 @@ static GameState main_menu(void){
 #define GENE_00 0
 #define GENE_L 0x10
 #define GENE_R 0x20
+#define GENE_WHOLE (GENE_L | GENE_R)
 #define GENE_HELD 0x40
 
 #define GENE_SHIFT 2
 #define GENE_MASK 0x3
+#define GENE_LMASK (GENE_L | 0xC)
+#define GENE_RMASK (GENE_R | 0x3)
 
 #define GENE_A0 (0x00 | GENE_L)
 #define GENE_B0 (0x04 | GENE_L)
@@ -86,10 +97,12 @@ static GameState main_menu(void){
 #define GENE_0C (0x02 | GENE_R)
 #define GENE_0D (0x03 | GENE_R)
 
-#define GENE_COUNT 10
-static u8 GENE_X[GENE_COUNT] = {32, 32, 32, 32, 32, 32, 32, 32, 32, 32};
-static u8 GENE_Y[GENE_COUNT] = {0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0, 0xB0, 0xC0};
-static u8 GENE_VALUE[GENE_COUNT] = {
+#define GENE_MAX 16
+
+static u8 GENE_COUNT = 8;
+static u8 GENE_X[GENE_MAX] = {32, 32, 32, 32, 32, 32, 32, 32, 32, 32};
+static u8 GENE_Y[GENE_MAX] = {0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0, 0xB0, 0xC0};
+static u8 GENE_VALUE[GENE_MAX] = {
 	GENE_A0 | GENE_0A,
 	GENE_B0 | GENE_0B,
 	GENE_C0 | GENE_0C,
@@ -102,7 +115,14 @@ static u8 GENE_VALUE[GENE_COUNT] = {
 	GENE_C0 | GENE_0D,
 };
 
-static void genes_draw(void){
+static void gene_remove(u8 i){
+	--GENE_COUNT;
+	GENE_X[i] = GENE_X[GENE_COUNT];
+	GENE_Y[i] = GENE_Y[GENE_COUNT];
+	GENE_VALUE[i] = GENE_VALUE[GENE_COUNT];
+}
+
+static void gene_draw(void){
 	for(idx = 0; idx < GENE_COUNT; ++idx){
 		ix = GENE_X[idx];
 		iy = GENE_Y[idx];
@@ -122,8 +142,16 @@ static void genes_draw(void){
 	}
 }
 
+static s8 gene_at(u8 x, u8 y){
+	for(idx = 0; idx < GENE_COUNT; ++idx){
+		if(GENE_X[idx] == x && GENE_Y[idx] == y) return idx;
+	}
+	
+	return -1;
+}
+
 #define PLAYER_SPEED 0x0180
-#define GRAB_OFFSET(_player_) ((s8)(_player_.flip ? 14 : -14))
+#define GRAB_OFFSET(_player_) (_player_.flip ? 14 : -14)
 
 typedef struct {
 	u16 x, y;
@@ -164,8 +192,8 @@ static void player_update(register Player *_player, u8 joy){
 	if(JOY_BTN_B((player.joy ^ player.prev_joy) & player.joy)){
 		if(player.gene_held >= 0){
 			// Drop the gene.
-			GENE_X[player.gene_held] = (GENE_X[player.gene_held] + 8) & 0xF0;
-			GENE_Y[player.gene_held] = (GENE_Y[player.gene_held] + 8) & 0xF0;
+			GENE_X[player.gene_held] = (GENE_X[player.gene_held] & 0xF0) + 0x08;
+			GENE_Y[player.gene_held] = (GENE_Y[player.gene_held] + 0x08) & 0xF0;
 			GENE_VALUE[player.gene_held] &= ~GENE_HELD;
 			player.gene_held = -1;
 			sound_play(SOUND_DROP);
@@ -184,6 +212,56 @@ static void player_update(register Player *_player, u8 joy){
 				}
 			}
 		}
+	}
+	
+	if(JOY_BTN_A((player.joy ^ player.prev_joy) & player.joy)){
+		{
+			s8 i0 = gene_at(0x68, 0x50);
+			s8 i1 = gene_at(0x78, 0x50);
+			s8 i2 = gene_at(0x88, 0x50);
+			
+			if(i0 >=0 && i1 < 0 && i2 >= 0 && (GENE_VALUE[i0] & GENE_WHOLE) == GENE_L && (GENE_VALUE[i2] & GENE_WHOLE) == GENE_R){
+				// Join the gene.
+				GENE_VALUE[i0] |= GENE_VALUE[i2] & GENE_RMASK;
+				GENE_X[i0] += 16;
+				gene_remove(i2);
+			}
+		}
+		{
+			s8 i0 = gene_at(0x78, 0xB0);
+			s8 i1 = gene_at(0x88, 0xB0);
+			s8 i2 = gene_at(0x98, 0xB0);
+			
+			if(i0 < 0 && i1 >= 0 && i2 < 0 && (GENE_VALUE[i1] & GENE_WHOLE) == GENE_WHOLE){
+				// Split the gene.
+				GENE_X[GENE_COUNT] = GENE_X[i1] + 16;
+				GENE_Y[GENE_COUNT] = GENE_Y[i1];
+				GENE_VALUE[GENE_COUNT] = GENE_VALUE[i1] & ~GENE_LMASK;
+				++GENE_COUNT;
+				
+				GENE_X[i1] -= 16;
+				GENE_VALUE[i1] &= ~GENE_RMASK;
+			}
+		}
+		{
+			s8 i = gene_at(0xB8, 0x60);
+			
+			if(i >= 0){
+				static const u8 BIT_SWAP_TABLE[] = {
+					0x00, 0x05, 0x0A, 0x0F, 0x05, 0x00, 0x0F, 0x0A, 0x0A, 0x0F, 0x00, 0x05, 0x0F, 0x0A, 0x05, 0x00,
+					0x30, 0x35, 0x3A, 0x3F, 0x35, 0x30, 0x3F, 0x3A, 0x3A, 0x3F, 0x30, 0x35, 0x3F, 0x3A, 0x35, 0x30,
+					0x30, 0x35, 0x3A, 0x3F, 0x35, 0x30, 0x3F, 0x3A, 0x3A, 0x3F, 0x30, 0x35, 0x3F, 0x3A, 0x35, 0x30,
+					0x00, 0x05, 0x0A, 0x0F, 0x05, 0x00, 0x0F, 0x0A, 0x0A, 0x0F, 0x00, 0x05, 0x0F, 0x0A, 0x05, 0x00
+				};
+				
+				GENE_VALUE[i] ^= BIT_SWAP_TABLE[GENE_VALUE[i] & 0x3F];
+			}
+		}
+	}
+	
+	if(JOY_SELECT(player.joy)){
+		// debug_hex((GENE_X[0] << 0) | (GENE_Y[0] & 0));
+		debug_hex(GENE_X[0] << 8);
 	}
 	
 	if(player.gene_held >= 0){
@@ -246,7 +324,7 @@ static GameState game_loop(void){
 			player_draw(PLAYER + 0);
 		}
 		
-		genes_draw();
+		gene_draw();
 		
 		px_spr_end();
 		px_wait_nmi();
