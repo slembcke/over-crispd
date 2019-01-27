@@ -146,6 +146,13 @@ static u8 GENE_VALUE[GENE_MAX] = {
 	GENE_B0 | GENE_0C,
 	GENE_C0 | GENE_0C,
 	GENE_A0 | GENE_0B,
+	
+	// GENE_B0 | GENE_0A,
+	// GENE_C0 | GENE_0D,
+	// GENE_B0 | GENE_0B,
+	// GENE_A0 | GENE_0D,
+	// GENE_C0 | GENE_0A,
+	// GENE_D0 | GENE_0C,
 };
 
 static const u8 EXPECTED_GENES[6] = {
@@ -247,39 +254,52 @@ static void gene_rotate(void){
 	}
 }
 
+static void blit_conveyor(u16 addr, u8 base);
+
 static void gene_check(){
 	s8 i;
-	bool match;
+	u8 match_count = 0;
 	
 	i = gene_at(0xE8, 0x90);
-	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[0]);
-	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
-	px_wait_frames(30);
+	if(i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[0]) match_count += 1;
 	
 	i = gene_at(0xE8, 0xA0);
-	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[1]);
-	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
-	px_wait_frames(30);
+	if(i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[1]) match_count += 1;
 	
 	i = gene_at(0xE8, 0xB0);
-	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[2]);
-	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
-	px_wait_frames(30);
+	if(i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[2]) match_count += 1;
 	
 	i = gene_at(0xE8, 0xC0);
-	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[3]);
-	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
-	px_wait_frames(30);
+	if(i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[3]) match_count += 1;
 	
 	i = gene_at(0xE8, 0xD0);
-	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[4]);
-	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
-	px_wait_frames(30);
+	if(i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[4]) match_count += 1;
 	
 	i = gene_at(0xE8, 0xE0);
-	match = (i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[5]);
-	sound_play(match ? SOUND_MATCH : SOUND_JUMP);
-	px_wait_frames(30);
+	if(i >= 0 && GENE_VALUE[idx] == EXPECTED_GENES[5]) match_count += 1;
+	
+	if(match_count == 6){
+		u8 i;
+		
+		// Play a silly animation.
+		for(i = 0; i < 7*16; ++i){
+			blit_conveyor(NT_ADDR(0, 28, 2), 0xE0);
+			blit_conveyor(NT_ADDR(0, 29, 2), 0xE1);
+			
+			for(ix = 0; ix < GENE_COUNT; ++ix) GENE_Y[ix] -= 1;
+			
+			gene_draw();
+			
+			px_spr_end();
+			px_wait_nmi();
+		}
+		
+		sound_play(SOUND_MATCH);
+		px_wait_frames(240);
+		
+		// Restart the game.
+		exit(0);
+	}
 }
 
 #define PLAYER_SPEED 0x0180
@@ -470,7 +490,7 @@ static void player_draw(register Player *player){
 	}
 }
 
-static void blit_tiles(u16 addr, u8 base){
+static void blit_conveyor(u16 addr, u8 base){
 	ix = base + 0x00 + (px_ticks & 0xE);
 	iy = ix + 0x10;
 	
@@ -534,9 +554,6 @@ static GameState game_loop(void){
 		}
 		
 		gene_draw();
-		
-		blit_tiles(NT_ADDR(0, 28, 2), 0xE0);
-		blit_tiles(NT_ADDR(0, 29, 2), 0xE1);
 		
 		px_spr_end();
 		// px_profile_end();
