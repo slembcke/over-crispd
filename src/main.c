@@ -151,9 +151,9 @@ static s8 gene_at(u8 x, u8 y){
 }
 
 static void gene_splice(void){
-	s8 i0 = gene_at(0x78, 0x50);
-	s8 i1 = gene_at(0x78, 0x60);
-	s8 i2 = gene_at(0x78, 0x70);
+	s8 i0 = gene_at(0x68, 0x50);
+	s8 i1 = gene_at(0x68, 0x60);
+	s8 i2 = gene_at(0x68, 0x70);
 	
 	if(i0 >=0 && i1 < 0 && i2 >= 0 && ((GENE_VALUE[i0] ^ GENE_VALUE[i2]) & GENE_WHOLE) == GENE_WHOLE){
 		// Join the gene.
@@ -164,24 +164,24 @@ static void gene_splice(void){
 }
 
 static void gene_dice(void){
-	s8 i0 = gene_at(0x78, 0xB0);
-	s8 i1 = gene_at(0x88, 0xB0);
-	s8 i2 = gene_at(0x98, 0xB0);
+	s8 i0 = gene_at(0x88, 0x90);
+	s8 i1 = gene_at(0x88, 0xA0);
+	s8 i2 = gene_at(0x88, 0xB0);
 	
 	if(i0 < 0 && i1 >= 0 && i2 < 0 && (GENE_VALUE[i1] & GENE_WHOLE) == GENE_WHOLE){
 		// Split the gene.
-		GENE_X[GENE_COUNT] = GENE_X[i1] + 16;
-		GENE_Y[GENE_COUNT] = GENE_Y[i1];
+		GENE_X[GENE_COUNT] = GENE_X[i1];
+		GENE_Y[GENE_COUNT] = GENE_Y[i1] + 16;
 		GENE_VALUE[GENE_COUNT] = GENE_VALUE[i1] & ~GENE_LMASK;
 		++GENE_COUNT;
 		
-		GENE_X[i1] -= 16;
+		GENE_Y[i1] -= 16;
 		GENE_VALUE[i1] &= ~GENE_RMASK;
 	}
 }
 
 static void gene_rotate(void){
-	s8 i = gene_at(0xB8, 0x60);
+	s8 i = gene_at(0xB8, 0x20);
 	
 	if(i >= 0){
 		static const u8 BIT_SWAP_TABLE[] = {
@@ -225,27 +225,29 @@ static const Player PLAYER_INIT[] = {
 #define SBUT (BUTTON_BIT | 0x00)
 #define DBUT (BUTTON_BIT | 0x01)
 #define RBUT (BUTTON_BIT | 0x02)
+#define GBUT (BUTTON_BIT | 0x03)
 #define WALL (NON_WALKABLE_BIT)
 #define STOR (NON_WALKABLE_BIT | STORAGE_BIT)
 #define FULL (NON_WALKABLE_BIT | STORAGE_BIT | FULL_BIT)
 
 // Uff, running out of time. Gotta just cram this in.
 static const u8 MAP[] = {
-	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, SBUT, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, STOR, STOR, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, RBUT, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, STOR, STOR, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, DBUT, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL,
-	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL,
+//  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
+	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // 0
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, WALL, STOR, WALL, // 1
+	WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 2
+	WALL, STOR, MPTY, RBUT, MPTY, WALL, WALL, WALL, WALL, WALL, MPTY, MPTY, WALL, WALL, STOR, WALL, // 3
+	WALL, STOR, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, SBUT, MPTY, WALL, WALL, STOR, WALL, // 4
+	WALL, STOR, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, WALL, WALL, WALL, WALL, STOR, WALL, // 5
+	WALL, STOR, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 6
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 7
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 8
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 9
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // A
+	WALL, WALL, MPTY, MPTY, MPTY, WALL, WALL, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // B
+	WALL, WALL, MPTY, MPTY, MPTY, WALL, DBUT, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // C
+	WALL, WALL, MPTY, MPTY, MPTY, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, GBUT, MPTY, MPTY, STOR, WALL, // D
+	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // E
 };
 
 static void player_update(register Player *_player, u8 joy){
@@ -301,17 +303,23 @@ static void player_update(register Player *_player, u8 joy){
 		if(idx == RBUT) gene_rotate();
 	}
 	
-	if(JOY_SELECT(player.joy)){
-		ix = (player.x >> 8);
-		iy = (player.y >> 8);
-		debug_hex(MAP[(iy & 0xF0) | (ix >> 4)]);
-	}
-	
 	if(player.gene_held >= 0){
 		// GENE_VALUE[player.gene_held] = 0;
 		GENE_X[player.gene_held] = (player.x >> 8) + GRAB_OFFSET(player);
 		GENE_Y[player.gene_held] = (player.y >> 8);
 	}
+	
+	// if(JOY_SELECT(player.joy)){
+	// 	ix = (player.x >> 8);
+	// 	iy = (player.y >> 8);
+	// 	iz = MAP[(iy & 0xF0) | (ix >> 4)];
+		
+	// 	px_buffer_data(4, NT_ADDR(0, 1, 1));
+	// 	PX.buffer[0] = (iz & BUTTON_BIT ? 'B' : '_');
+	// 	PX.buffer[1] = (iz & NON_WALKABLE_BIT ? 'W' : '_');
+	// 	PX.buffer[2] = (iz & STORAGE_BIT ? 'S' : '_');
+	// 	PX.buffer[3] = _hextab[iz & 0x3];
+	// }
 	
 	player.prev_joy = joy;
 	memcpy(_player, &player, sizeof(player));
