@@ -16,9 +16,9 @@ u8 joy0, joy1;
 
 static const u8 PALETTE[] = {
 	CLR_BG, 0x26, 0x16, 0x06,
-	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
-	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
-	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
+	CLR_BG, 0x24, 0x14, 0x04,
+	CLR_BG, 0x28, 0x17, CLR_BG,
+	CLR_BG, 0x20, 0x2D, 0x1D,
 	
 	CLR_BG, 0x26, 0x16, 0x06,
 	CLR_BG, 0x24, 0x14, 0x04,
@@ -100,8 +100,8 @@ static GameState main_menu(void){
 #define GENE_MAX 16
 
 static u8 GENE_COUNT = 8;
-static u8 GENE_X[GENE_MAX] = {32, 32, 32, 32, 32, 32, 32, 32, 32, 32};
-static u8 GENE_Y[GENE_MAX] = {0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0, 0xB0, 0xC0};
+static u8 GENE_X[GENE_MAX] = {24, 24, 24, 24, 24, 24, 24, 24};
+static u8 GENE_Y[GENE_MAX] = {0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0};
 static u8 GENE_VALUE[GENE_MAX] = {
 	GENE_A0 | GENE_0A,
 	GENE_B0 | GENE_0B,
