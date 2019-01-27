@@ -21,9 +21,9 @@ static const u8 PALETTE[] = {
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
 	
 	CLR_BG, 0x26, 0x16, 0x06,
-	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
-	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
-	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
+	CLR_BG, 0x24, 0x14, 0x04,
+	CLR_BG, 0x28, 0x17, CLR_BG,
+	CLR_BG, 0x20, 0x2D, 0x1D,
 };
 
 static void wait_noinput(void){
@@ -91,10 +91,10 @@ static GameState main_menu(void){
 static u8 GENE_X[GENE_COUNT] = {32, 32, 32, 32, 32, 32, 32, 32, 32, 32};
 static u8 GENE_Y[GENE_COUNT] = {0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xA0, 0xB0, 0xC0};
 static u8 GENE_VALUE[GENE_COUNT] = {
-	GENE_A0 | GENE_0B,
-	GENE_C0 | GENE_0D,
-	GENE_A0 | GENE_0B,
-	GENE_C0 | GENE_0D,
+	GENE_A0 | GENE_0A,
+	GENE_B0 | GENE_0B,
+	GENE_C0 | GENE_0C,
+	GENE_D0 | GENE_0D,
 	GENE_A0 | GENE_0B,
 	GENE_C0 | GENE_0D,
 	GENE_A0 | GENE_0B,
@@ -111,14 +111,14 @@ static void genes_draw(void){
 		
 		if(tmp & GENE_L){
 			iz = 0x20 + ((tmp >> GENE_SHIFT) & GENE_MASK);
-			px_spr(ix - 8, iy - 0x10, 0x00, iz);
-			px_spr(ix - 8, iy - 0x08, 0x80, iz);
+			px_spr(ix - 8, iy - 0x10, 0x00 | iz, iz);
+			px_spr(ix - 8, iy - 0x08, 0x80 | iz, iz);
 		}
 		
 		if(tmp & GENE_R){
 			iz = 0x20 + ((tmp >> 0) & GENE_MASK);
-			px_spr(ix + 0, iy - 0x10, 0x40, iz);
-			px_spr(ix + 0, iy - 0x08, 0xC0, iz);
+			px_spr(ix + 0, iy - 0x10, 0x40 | iz, iz);
+			px_spr(ix + 0, iy - 0x08, 0xC0 | iz, iz);
 		}
 	}
 }
@@ -133,14 +133,15 @@ typedef struct {
 	u8 joy, prev_joy;
 	bool flip;
 	
+	u8 palette;
 	s8 gene_held;
 } Player;
 
 static Player PLAYER[2];
 
 static const Player PLAYER_INIT[] = {
-	{128 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, -1},
-	{150 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, -1},
+	{128 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x00, -1},
+	{150 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x01, -1},
 };
 
 static void player_update(register Player *_player, u8 joy){
@@ -201,15 +202,17 @@ static void player_draw(register Player *player){
 	idx *= 2;
 	
 	if(player->flip){
-		px_spr(ix - 8, iy - 0x10, 0x40, 0x01 + (px_ticks & 0x7));
-		px_spr(ix + 0, iy - 0x10, 0x40, 0x00);
-		px_spr(ix - 8, iy - 0x08, 0x40, 0x11 + idx);
-		px_spr(ix + 0, iy - 0x08, 0x40, 0x10 + idx);
+		iz = 0x40 | player->palette;
+		px_spr(ix - 8, iy - 0x10, iz, 0x01 + (px_ticks & 0x7));
+		px_spr(ix + 0, iy - 0x10, iz, 0x00);
+		px_spr(ix - 8, iy - 0x08, iz, 0x11 + idx);
+		px_spr(ix + 0, iy - 0x08, iz, 0x10 + idx);
 	} else {
-		px_spr(ix - 8, iy - 0x10, 0x00, 0x00);
-		px_spr(ix + 0, iy - 0x10, 0x00, 0x01 + (px_ticks & 0x7));
-		px_spr(ix - 8, iy - 0x08, 0x00, 0x10 + idx);
-		px_spr(ix + 0, iy - 0x08, 0x00, 0x11 + idx);
+		iz = 0x00 | player->palette;
+		px_spr(ix - 8, iy - 0x10, iz, 0x00);
+		px_spr(ix + 0, iy - 0x10, iz, 0x01 + (px_ticks & 0x7));
+		px_spr(ix - 8, iy - 0x08, iz, 0x10 + idx);
+		px_spr(ix + 0, iy - 0x08, iz, 0x11 + idx);
 	}
 }
 
