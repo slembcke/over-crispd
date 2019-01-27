@@ -76,6 +76,42 @@ static GameState main_menu(void){
 	return game_loop();
 }
 
+#define BUTTON_BIT 0x04
+#define NON_WALKABLE_BIT 0x08
+#define STORAGE_BIT 0x10
+#define FULL_BIT 0x20
+
+#define MPTY 0x00
+#define SBUT (BUTTON_BIT | 0x00)
+#define DBUT (BUTTON_BIT | 0x01)
+#define RBUT (BUTTON_BIT | 0x02)
+#define GBUT (BUTTON_BIT | 0x03)
+#define WALL (NON_WALKABLE_BIT)
+#define STOR (NON_WALKABLE_BIT | STORAGE_BIT)
+#define FULL (NON_WALKABLE_BIT | STORAGE_BIT | FULL_BIT)
+
+// Uff, running out of time. Gotta just cram this in.
+static u8 MAP[] = {
+//  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
+	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // 0
+	WALL, FULL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, WALL, STOR, WALL, // 1
+	WALL, FULL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 2
+	WALL, FULL, MPTY, RBUT, MPTY, WALL, WALL, WALL, WALL, WALL, MPTY, MPTY, WALL, WALL, STOR, WALL, // 3
+	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, SBUT, MPTY, WALL, WALL, STOR, WALL, // 4
+	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, WALL, WALL, WALL, WALL, STOR, WALL, // 5
+	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 6
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 7
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 8
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 9
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // A
+	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // B
+	WALL, WALL, MPTY, MPTY, MPTY, WALL, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // C
+	WALL, WALL, MPTY, MPTY, MPTY, WALL, DBUT, MPTY, MPTY, MPTY, MPTY, GBUT, MPTY, MPTY, STOR, WALL, // D
+	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // E
+};
+
+#define MAP_BLOCK_AT(x, y) ((y & 0xF0)| (x >> 4))
+
 #define GENE_00 0
 #define GENE_L 0x10
 #define GENE_R 0x20
@@ -162,6 +198,10 @@ static void gene_splice(void){
 		GENE_VALUE[i0] |= GENE_VALUE[i2] & (GENE_LMASK | GENE_RMASK);
 		GENE_Y[i0] += 16;
 		gene_remove(i2);
+		
+		MAP[0x56] &= ~FULL_BIT;
+		MAP[0x66] |=  FULL_BIT;
+		MAP[0x76] &= ~FULL_BIT;
 	}
 }
 
@@ -179,6 +219,10 @@ static void gene_dice(void){
 		
 		GENE_Y[i1] -= 16;
 		GENE_VALUE[i1] &= ~GENE_RMASK;
+		
+		MAP[0x97] |=  FULL_BIT;
+		MAP[0xA7] &= ~FULL_BIT;
+		MAP[0xB7] |=  FULL_BIT;
 	}
 }
 
@@ -217,42 +261,6 @@ static const Player PLAYER_INIT[] = {
 	{128 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x00, -1},
 	{150 << 8, 128 << 8, 0, 0, 0x00, 0x00, false, 0x01, -1},
 };
-
-#define BUTTON_BIT 0x04
-#define NON_WALKABLE_BIT 0x08
-#define STORAGE_BIT 0x10
-#define FULL_BIT 0x20
-
-#define MPTY 0x00
-#define SBUT (BUTTON_BIT | 0x00)
-#define DBUT (BUTTON_BIT | 0x01)
-#define RBUT (BUTTON_BIT | 0x02)
-#define GBUT (BUTTON_BIT | 0x03)
-#define WALL (NON_WALKABLE_BIT)
-#define STOR (NON_WALKABLE_BIT | STORAGE_BIT)
-#define FULL (NON_WALKABLE_BIT | STORAGE_BIT | FULL_BIT)
-
-// Uff, running out of time. Gotta just cram this in.
-static u8 MAP[] = {
-//  0     1     2     3     4     5     6     7     8     9     A     B     C     D     E     F
-	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // 0
-	WALL, FULL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, WALL, STOR, WALL, // 1
-	WALL, FULL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 2
-	WALL, FULL, MPTY, RBUT, MPTY, WALL, WALL, WALL, WALL, WALL, MPTY, MPTY, WALL, WALL, STOR, WALL, // 3
-	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, SBUT, MPTY, WALL, WALL, STOR, WALL, // 4
-	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, WALL, WALL, WALL, WALL, WALL, STOR, WALL, // 5
-	WALL, FULL, MPTY, MPTY, MPTY, WALL, STOR, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 6
-	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, WALL, WALL, STOR, WALL, // 7
-	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 8
-	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // 9
-	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // A
-	WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // B
-	WALL, WALL, MPTY, MPTY, MPTY, WALL, WALL, WALL, WALL, MPTY, MPTY, MPTY, MPTY, MPTY, STOR, WALL, // C
-	WALL, WALL, MPTY, MPTY, MPTY, WALL, DBUT, MPTY, MPTY, MPTY, MPTY, GBUT, MPTY, MPTY, STOR, WALL, // D
-	WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, WALL, // E
-};
-
-#define MAP_BLOCK_AT(x, y) ((y & 0xF0)| (x >> 4))
 
 static void player_update(register Player *_player, u8 joy){
 	static s8 edge;
@@ -371,15 +379,22 @@ static void player_update(register Player *_player, u8 joy){
 	}
 	
 	if(JOY_SELECT(player.joy)){
-		ix = (player.x >> 8);
-		iy = (player.y >> 8);
-		iz = MAP[(iy & 0xF0) | (ix >> 4)];
+		// ix = (player.x >> 8);
+		// iy = (player.y >> 8);
 		
-		px_buffer_data(4, NT_ADDR(0, 1, 1));
-		PX.buffer[0] = (iz & BUTTON_BIT ? 'B' : '_');
-		PX.buffer[1] = (iz & NON_WALKABLE_BIT ? 'W' : '_');
-		PX.buffer[2] = (iz & STORAGE_BIT ? 'S' : '_');
-		PX.buffer[3] = _hextab[iz & 0x3];
+		ix = (player.x >> 8) + GRAB_OFFSET(player);
+		iy = (player.y >> 8) - 8;
+		
+		iz = MAP_BLOCK_AT(ix, iy);
+		idx = MAP[iz];
+		debug_hex(iz);
+		
+		// px_buffer_data(4, NT_ADDR(0, 1, 1));
+		// PX.buffer[0] = (idx & BUTTON_BIT ? 'B' : '_');
+		// PX.buffer[1] = (idx & NON_WALKABLE_BIT ? 'W' : '_');
+		// PX.buffer[2] = (idx & STORAGE_BIT ? 'S' : '_');
+		// PX.buffer[3] = (idx & FULL_BIT ? 'F' : '_');
+		// PX.buffer[3] = _hextab[idx & 0x3];
 	}
 	
 	player.prev_joy = joy;
