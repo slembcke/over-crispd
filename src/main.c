@@ -277,12 +277,36 @@ static void player_update(register Player *_player, u8 joy){
 	ix = (player.x >> 8);
 	iy = (player.y >> 8) - 4;
 	
-	// Collide with block below the character.
+	// Collide with the block below.
 	iz = MAP_BLOCK_AT(ix, iy);
-	idx = (MAP + 16)[iz];
+	idx = (MAP + 16)[iz] & NON_WALKABLE_BIT;
 	edge = 6 - (~iy & 0x0F);
 	if(idx && edge >= 0){
 		player.y -= (edge << 8);
+	}
+	
+	// Collide with the block above.
+	iz = MAP_BLOCK_AT(ix, iy);
+	idx = (MAP - 16)[iz] & NON_WALKABLE_BIT;
+	edge = (~iy & 0x0F) - 12;
+	if(idx && edge >= 0){
+		player.y += (edge << 8);
+	}
+	
+	// Collide with the block to the right
+	iz = MAP_BLOCK_AT(ix, iy);
+	idx = (MAP + 1)[iz] & NON_WALKABLE_BIT;
+	edge = 6 - (~ix & 0x0F);
+	if(idx && edge >= 0){
+		player.x -= (edge << 8);
+	}
+	
+	// Collide with the block to the right
+	iz = MAP_BLOCK_AT(ix, iy);
+	idx = (MAP - 1)[iz] & NON_WALKABLE_BIT;
+	edge = (~ix & 0x0F) - 8;
+	if(idx && edge >= 0){
+		player.x += (edge << 8);
 	}
 	
 	if(JOY_BTN_B((player.joy ^ player.prev_joy) & player.joy)){
