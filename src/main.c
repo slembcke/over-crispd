@@ -15,7 +15,7 @@ u8 joy0, joy1;
 #define CLR_BG 0x36
 
 static const u8 PALETTE[] = {
-	CLR_BG, 0x06, 0x19, 0x01,
+	CLR_BG, 0x26, 0x16, 0x06,
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
 	CLR_BG, CLR_BG, CLR_BG, CLR_BG,
@@ -57,7 +57,6 @@ static GameState main_menu(void){
 	
 	wait_noinput();
 	
-	// Randomize the seed based on start time.
 	while(true){
 		poll_input();
 		if(JOY_START(joy0 | joy1)) return game_loop();
@@ -162,9 +161,11 @@ static void player_update(register Player *_player, u8 joy){
 	player.x += player.vx;
 	player.y += player.vy;
 	
-	if(JOY_BTN_B(player.joy ^ player.prev_joy) && JOY_BTN_B(player.joy)){
+	if(JOY_BTN_B((player.joy ^ player.prev_joy) & player.joy)){
 		if(player.gene_held >= 0){
 			// Drop the gene.
+			GENE_X[player.gene_held] = (GENE_X[player.gene_held] + 8) & 0xF0;
+			GENE_Y[player.gene_held] = (GENE_Y[player.gene_held] + 8) & 0xF0;
 			GENE_VALUE[player.gene_held] &= ~GENE_HELD;
 			player.gene_held = -1;
 			sound_play(SOUND_DROP);
