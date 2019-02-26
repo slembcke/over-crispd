@@ -58,10 +58,41 @@ static GameState main_menu(void);
 static GameState game_loop(u8 sequence);
 static void pause(void);
 
+static void helix_sprites(void){
+	px_spr(ix + 0x00, iy + 0x00, 0x00, idx + 0x00);
+	px_spr(ix + 0x08, iy + 0x00, 0x00, idx + 0x01);
+	px_spr(ix + 0x10, iy + 0x00, 0x00, idx + 0x02);
+	px_spr(ix + 0x18, iy + 0x00, 0x00, idx + 0x03);
+	px_spr(ix + 0x00, iy + 0x08, 0x00, idx + 0x10);
+	px_spr(ix + 0x08, iy + 0x08, 0x00, idx + 0x11);
+	px_spr(ix + 0x10, iy + 0x08, 0x00, idx + 0x12);
+	px_spr(ix + 0x18, iy + 0x08, 0x00, idx + 0x13);
+	px_spr(ix + 0x00, iy + 0x10, 0x00, idx + 0x20);
+	px_spr(ix + 0x08, iy + 0x10, 0x00, idx + 0x21);
+	px_spr(ix + 0x10, iy + 0x10, 0x00, idx + 0x22);
+	px_spr(ix + 0x18, iy + 0x10, 0x00, idx + 0x23);
+	px_spr(ix + 0x00, iy + 0x18, 0x00, idx + 0x30);
+	px_spr(ix + 0x08, iy + 0x18, 0x00, idx + 0x31);
+	px_spr(ix + 0x10, iy + 0x18, 0x00, idx + 0x32);
+	px_spr(ix + 0x18, iy + 0x18, 0x00, idx + 0x33);
+}
+
 static GameState main_menu(void){
+	static u8 sequence = 0;
+	static u8 anim = 0;
+	static const u8 ANIM_OFFSET[] = {0x00, 0x04, 0x08, 0x0C, 0x40, 0x44};
+	
 	px_inc(PX_INC1);
 	px_ppu_sync_off(); {
+		static const u8 PAL[] = {0x2D, 0x10, 0x31};
+		
+		px_addr(PAL_ADDR);
+		px_blit(32, PALETTE);
+		px_addr(PAL_ADDR + 0x11);
+		px_blit(3, PAL);
+		
 		decompress_lz4_to_vram(NT_ADDR(0, 0, 0), gfx_menu_lz4);
+		decompress_lz4_to_vram(CHR_ADDR(1, 0), gfx_helix_lz4chr);
 	} px_ppu_sync_on();
 	
 	wait_noinput();
@@ -70,13 +101,25 @@ static GameState main_menu(void){
 		poll_input();
 		if(JOY_START(joy0 | joy1)) break;
 		
-		++idx;
+		++sequence;
 		
-		px_spr_end();
+		idx = ANIM_OFFSET[anim];
+		ix = 40;
+		iy = 88; helix_sprites();
+		iy = 88 + 32; helix_sprites();
+		
+		ix = 184;
+		iy = 88; helix_sprites();
+		iy = 88 + 32; helix_sprites();
+		
+		if((px_ticks & 0x7) == 0) ++anim;
+		if(anim == 6) anim = 0;
+		
+		// px_spr_end();
 		px_wait_nmi();
 	}
 	
-	return game_loop(idx & 0xF);
+	return game_loop(sequence & 0xF);
 }
 
 #define BUTTON_BIT 0x04
@@ -552,6 +595,10 @@ static GameState game_loop(u8 sequence){
 	px_ppu_sync_off(); {
 		static u8 attrib_mem[8];
 		
+		px_addr(PAL_ADDR);
+		px_blit(32, PALETTE);
+		
+		decompress_lz4_to_vram(CHR_ADDR(1, 0x00), gfx_tiles_lz4chr);
 		decompress_lz4_to_vram(NT_ADDR(0, 0, 0), gfx_level1_lz4);
 		
 		// Need to copy the expected gene sequence into PPU memory.
@@ -651,18 +698,10 @@ void main(void){
 	// The main menu increments this constantly until the player starts the game.
 	rand_seed = 0x0D8E;
 	
-	// Set the palette.
-	waitvsync();
-	px_addr(PAL_ADDR);
-	px_blit(32, PALETTE);
-	
-	// Load BG tiles..
 	px_bg_table(0);
-	decompress_lz4_to_vram(CHR_ADDR(0, 0x00), gfx_tiles_lz4chr);
-	
-	// Load sprites.
 	px_spr_table(1);
-	decompress_lz4_to_vram(CHR_ADDR(1, 0x00), gfx_tiles_lz4chr);
+	
+	decompress_lz4_to_vram(CHR_ADDR(0, 0x00), gfx_tiles_lz4chr);
 	
 	music_init(MUSIC);
 	sound_init(SOUNDS);

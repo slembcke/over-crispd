@@ -11,6 +11,7 @@ lz4_header_bytes = 8
 .rodata
 
 inclz4 _gfx_tiles_lz4chr, "tiles.lz4chr"
+inclz4 _gfx_helix_lz4chr, "helix.lz4chr"
 
 inclz4 _gfx_menu_lz4, "menu.lz4"
 inclz4 _gfx_credits_lz4, "credits.lz4"

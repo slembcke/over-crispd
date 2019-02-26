@@ -33,6 +33,7 @@ ASMSRC = \
 
 GFX = \
 	gfx/tiles.png \
+	gfx/helix.png \
 
 PAL0 = "36 26 16 06"
 PAL1 = "36 24 14 04"
