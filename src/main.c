@@ -55,7 +55,7 @@ static void debug_hex(u16 value){
 }
 
 static GameState main_menu(void);
-static GameState game_loop(void);
+static GameState game_loop(u8 sequence);
 static void pause(void);
 
 static GameState main_menu(void){
@@ -68,13 +68,15 @@ static GameState main_menu(void){
 	
 	while(true){
 		poll_input();
-		if(JOY_START(joy0 | joy1)) return game_loop();
+		if(JOY_START(joy0 | joy1)) break;
+		
+		++idx;
 		
 		px_spr_end();
 		px_wait_nmi();
 	}
 	
-	return game_loop();
+	return game_loop(idx & 0xF);
 }
 
 #define BUTTON_BIT 0x04
@@ -134,28 +136,68 @@ static u8 MAP[] = {
 #define GENE_0C (0x02 | GENE_R)
 #define GENE_0D (0x03 | GENE_R)
 
+#define GENE_AA (GENE_A0 | GENE_0A)
+#define GENE_AB (GENE_A0 | GENE_0B)
+#define GENE_AC (GENE_A0 | GENE_0C)
+#define GENE_AD (GENE_A0 | GENE_0D)
+#define GENE_BA (GENE_B0 | GENE_0A)
+#define GENE_BB (GENE_B0 | GENE_0B)
+#define GENE_BC (GENE_B0 | GENE_0C)
+#define GENE_BD (GENE_B0 | GENE_0D)
+#define GENE_CA (GENE_C0 | GENE_0A)
+#define GENE_CB (GENE_C0 | GENE_0B)
+#define GENE_CC (GENE_C0 | GENE_0C)
+#define GENE_CD (GENE_C0 | GENE_0D)
+#define GENE_DA (GENE_D0 | GENE_0A)
+#define GENE_DB (GENE_D0 | GENE_0B)
+#define GENE_DC (GENE_D0 | GENE_0C)
+#define GENE_DD (GENE_D0 | GENE_0D)
+
 #define GENE_MAX 12
+
+static u8 GENE_SETS[][6] = {
+	{GENE_AD, GENE_AD, GENE_CC, GENE_CB, GENE_AD, GENE_BB},
+	{GENE_AA, GENE_CD, GENE_DB, GENE_CB, GENE_BD, GENE_CA},
+	{GENE_AD, GENE_AC, GENE_CA, GENE_BB, GENE_CB, GENE_DD},
+	{GENE_BC, GENE_BD, GENE_AC, GENE_BD, GENE_AC, GENE_DA},
+	{GENE_DB, GENE_AC, GENE_CA, GENE_AB, GENE_BD, GENE_CD},
+	{GENE_CB, GENE_CB, GENE_AA, GENE_DB, GENE_CD, GENE_DA},
+	{GENE_CD, GENE_AD, GENE_CB, GENE_BD, GENE_AA, GENE_CB},
+	{GENE_DA, GENE_AC, GENE_BB, GENE_BC, GENE_AD, GENE_DC},
+	{GENE_DB, GENE_AC, GENE_BA, GENE_CD, GENE_CD, GENE_AB},
+	{GENE_DC, GENE_BA, GENE_BA, GENE_CD, GENE_AD, GENE_CB},
+	{GENE_CA, GENE_DA, GENE_DB, GENE_BC, GENE_CB, GENE_DA},
+	{GENE_BC, GENE_AA, GENE_BD, GENE_DA, GENE_DC, GENE_BC},
+	{GENE_BD, GENE_BC, GENE_AB, GENE_AC, GENE_DD, GENE_CA},
+	{GENE_AD, GENE_BC, GENE_AC, GENE_AB, GENE_DC, GENE_BD},
+	{GENE_AD, GENE_CC, GENE_BA, GENE_AB, GENE_CD, GENE_DB},
+	{GENE_CA, GENE_CA, GENE_DB, GENE_DB, GENE_DC, GENE_AB},
+};
+
+static u8 EXPECTED_SETS[][6] = {
+	{GENE_CD, GENE_BC, GENE_CD, GENE_DA, GENE_AB, GENE_AB},
+	{GENE_DC, GENE_DA, GENE_CC, GENE_BB, GENE_DA, GENE_AB},
+	{GENE_BA, GENE_BA, GENE_DA, GENE_CC, GENE_DB, GENE_DC},
+	{GENE_DC, GENE_AD, GENE_AB, GENE_AD, GENE_CC, GENE_BB},
+	{GENE_BA, GENE_BA, GENE_CB, GENE_DC, GENE_DC, GENE_AD},
+	{GENE_AB, GENE_DD, GENE_AC, GENE_AC, GENE_DC, GENE_BB},
+	{GENE_BA, GENE_DD, GENE_AC, GENE_BC, GENE_DA, GENE_BC},
+	{GENE_CA, GENE_CD, GENE_CD, GENE_DB, GENE_AB, GENE_AB},
+	{GENE_CA, GENE_DC, GENE_AA, GENE_CB, GENE_BB, GENE_DD},
+	{GENE_AC, GENE_AC, GENE_CA, GENE_DD, GENE_BB, GENE_DB},
+	{GENE_BB, GENE_DC, GENE_BA, GENE_CD, GENE_AA, GENE_CD},
+	{GENE_DB, GENE_AB, GENE_CD, GENE_AB, GENE_CD, GENE_CA},
+	{GENE_DC, GENE_AD, GENE_BB, GENE_BA, GENE_DA, GENE_CC},
+	{GENE_CA, GENE_DB, GENE_CA, GENE_CB, GENE_DB, GENE_DA},
+	{GENE_AC, GENE_BD, GENE_AA, GENE_BC, GENE_DC, GENE_BD},
+	{GENE_DA, GENE_DD, GENE_AC, GENE_BB, GENE_BA, GENE_CC},
+};
 
 static u8 GENE_COUNT = 6;
 static u8 GENE_X[GENE_MAX] = {24, 24, 24, 24, 24, 24};
 static u8 GENE_Y[GENE_MAX] = {0x20, 0x30, 0x40, 0x50, 0x60, 0x70};
-static u8 GENE_VALUE[GENE_MAX] = {
-	GENE_A0 | GENE_0A,
-	GENE_D0 | GENE_0B,
-	GENE_D0 | GENE_0D,
-	GENE_B0 | GENE_0C,
-	GENE_C0 | GENE_0C,
-	GENE_A0 | GENE_0B,
-};
-
-static const u8 EXPECTED_GENES[6] = {
-	GENE_B0 | GENE_0A,
-	GENE_C0 | GENE_0D,
-	GENE_B0 | GENE_0B,
-	GENE_A0 | GENE_0D,
-	GENE_C0 | GENE_0A,
-	GENE_D0 | GENE_0C,
-};
+static u8 GENE_VALUE[GENE_MAX];
+static const u8 EXPECTED_GENES[6];
 
 static void gene_remove(u8 i){
 	--GENE_COUNT;
@@ -502,7 +544,10 @@ static const u8 BLOCK_CHR[] = {0x2F, 0x2E, 0x2E, 0x2E};
 static const u8 BLOCK_PAL[] = {0x00, 0x55, 0xAA, 0xFF};
 static const u8 BLOCK_MASK[] = {0xC0, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-static GameState game_loop(void){
+static GameState game_loop(u8 sequence){
+	memcpy(GENE_VALUE, GENE_SETS[sequence], 6);
+	memcpy(EXPECTED_GENES, EXPECTED_SETS[sequence], 6);
+	
 	px_inc(PX_INC1);
 	px_ppu_sync_off(); {
 		static u8 attrib_mem[8];
@@ -622,6 +667,5 @@ void main(void){
 	music_init(MUSIC);
 	sound_init(SOUNDS);
 	
-	game_loop();
 	main_menu();
 }
