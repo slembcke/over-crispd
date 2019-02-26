@@ -146,13 +146,6 @@ static u8 GENE_VALUE[GENE_MAX] = {
 	GENE_B0 | GENE_0C,
 	GENE_C0 | GENE_0C,
 	GENE_A0 | GENE_0B,
-	
-	// GENE_B0 | GENE_0A,
-	// GENE_C0 | GENE_0D,
-	// GENE_B0 | GENE_0B,
-	// GENE_A0 | GENE_0D,
-	// GENE_C0 | GENE_0A,
-	// GENE_D0 | GENE_0C,
 };
 
 static const u8 EXPECTED_GENES[6] = {
@@ -446,25 +439,6 @@ static void player_update(register Player *_player, u8 joy){
 		player.button = 0xFF;
 	}
 	
-	// if(JOY_SELECT(player.joy)){
-	// 	// ix = (player.x >> 8);
-	// 	// iy = (player.y >> 8);
-		
-	// 	ix = (player.x >> 8) + GRAB_OFFSET(player);
-	// 	iy = (player.y >> 8) - 8;
-		
-	// 	iz = MAP_BLOCK_AT(ix, iy);
-	// 	idx = MAP[iz];
-	// 	debug_hex(iz);
-		
-	// 	// px_buffer_data(4, NT_ADDR(0, 1, 1));
-	// 	// PX.buffer[0] = (idx & BUTTON_BIT ? 'B' : '_');
-	// 	// PX.buffer[1] = (idx & NON_WALKABLE_BIT ? 'W' : '_');
-	// 	// PX.buffer[2] = (idx & STORAGE_BIT ? 'S' : '_');
-	// 	// PX.buffer[3] = (idx & FULL_BIT ? 'F' : '_');
-	// 	// PX.buffer[3] = _hextab[idx & 0x3];
-	// }
-	
 	player.prev_joy = joy;
 	memcpy(_player, &player, sizeof(player));
 }
@@ -524,10 +498,63 @@ static void blit_conveyor(u16 addr, u8 base){
 	PX.buffer[0x19] = iy;
 }
 
+static const u8 BLOCK_CHR[] = {0x2F, 0x2E, 0x2E, 0x2E};
+static const u8 BLOCK_PAL[] = {0x00, 0x55, 0xAA, 0xFF};
+static const u8 BLOCK_MASK[] = {0xC0, 0x00, 0x00, 0x00, 0x00, 0x00};
+
 static GameState game_loop(void){
 	px_inc(PX_INC1);
 	px_ppu_sync_off(); {
+		static u8 attrib_mem[8];
+		
 		decompress_lz4_to_vram(NT_ADDR(0, 0, 0), gfx_level1_lz4);
+		
+		// Need to copy the expected gene sequence into PPU memory.
+		// Cripses this code is rushed... Don't look!
+		for(idx = 0; idx < sizeof(EXPECTED_GENES); ++idx){
+			u8 block = EXPECTED_GENES[idx];
+			u8 block_l = BLOCK_CHR[(block >> 2) & 0x3];
+			u8 block_r = BLOCK_CHR[(block >> 0) & 0x3];
+			u16 addr = NT_ADDR(0, 26, 2 + 2*idx);
+			
+			px_addr(addr + 0x00);
+			PPU.vram.data = block_l;
+			PPU.vram.data = block_l;
+			px_addr(addr + 0x20);
+			PPU.vram.data = block_l;
+			PPU.vram.data = block_l;
+			
+			px_addr(addr + 0x04);
+			PPU.vram.data = block_r;
+			PPU.vram.data = block_r;
+			px_addr(addr + 0x24);
+			PPU.vram.data = block_r;
+			PPU.vram.data = block_r;
+		}
+		
+		// I don't want to know what the assembly for this looks like...
+		attrib_mem[0] = (EXPECTED_GENES[0] & 0xC) << 4;
+		attrib_mem[1] = (EXPECTED_GENES[0] & 0x3) << 6;
+		attrib_mem[2] = (EXPECTED_GENES[1] & 0xC) << 0 | (EXPECTED_GENES[2] & 0xC) << 4;
+		attrib_mem[3] = (EXPECTED_GENES[1] & 0x3) << 2 | (EXPECTED_GENES[2] & 0x3) << 6;
+		attrib_mem[4] = (EXPECTED_GENES[3] & 0xC) << 0 | (EXPECTED_GENES[4] & 0xC) << 4;
+		attrib_mem[5] = (EXPECTED_GENES[3] & 0x3) << 2 | (EXPECTED_GENES[4] & 0x3) << 6;
+		attrib_mem[6] = (EXPECTED_GENES[5] & 0xC) << 0;
+		attrib_mem[7] = (EXPECTED_GENES[5] & 0x3) << 2;
+		
+		px_addr(AT_ADDR(0) + 0x06);
+		PPU.vram.data = attrib_mem[0];
+		PPU.vram.data = attrib_mem[1];
+		px_addr(AT_ADDR(0) + 0x0E);
+		PPU.vram.data = attrib_mem[2];
+		PPU.vram.data = attrib_mem[3];
+		px_addr(AT_ADDR(0) + 0x16);
+		PPU.vram.data = attrib_mem[4];
+		PPU.vram.data = attrib_mem[5];
+		px_addr(AT_ADDR(0) + 0x1E);
+		PPU.vram.data = attrib_mem[6];
+		PPU.vram.data = attrib_mem[7];
+		
 		px_spr_clear();
 	} px_ppu_sync_on();
 	
